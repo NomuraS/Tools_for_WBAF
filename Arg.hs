@@ -33,13 +33,13 @@ makeForest (n:nodes) res =
   let
   insertEdge ::(Eq a) =>  Tree a -> Tree a -> Tree a  
   insertEdge (Node b [Node a []]) (Node x trlist)  
-    | x == a = Node a (trlist ++[Node b []])
-    | x /= a = Node x (map (\z-> insertEdge (Node b [Node a []]) z) trlist)
-  aa = map (insertEdge n) res
+    | x == a = Node a (nub$ trlist ++[Node b []])
+    | x /= a = Node x (nub$map (\z-> insertEdge (Node b [Node a []]) z) trlist)
+  aa = nub$ map (insertEdge n) res
   in 
     if aa == res
-    then makeForest (nodes++[n]) res
-    else makeForest nodes aa
+    then makeForest (nub$nodes++[n]) res
+    else makeForest (nub$nodes) aa
 
 sup2forest ::(Eq a) => WBAF a-> Forest a
 sup2forest  wbaf@(WBAF _ _ sup _) =
@@ -382,24 +382,62 @@ drawForestIO tr =
     aaa ::  (Eq a, Show a)=> Tree a -> String
     aaa tt = case tt of 
       Node a [] -> show a 
-      Node a list -> intercalate "\n" (map  (\x -> x ++"->"++ show a) (map aaa list))
+      Node a list -> intercalate "\n" (nub $map  (\x -> x ++"->"++ show a) (nub $map aaa list))
     arrows ::  String
-    arrows = (intercalate "\n" $ map aaa tr)
+    arrows = (intercalate "\n" $nub$ map aaa tr)
   in
    do writeFile "model.dot" ("digraph  model{\n" ++ arrows ++ " \n}")  
 
+
+
+-- tree2paths ::(Eq a) =>  Tree a -> [[a]]
+-- tree2paths  (Node x []) = [[x]]
+-- tree2paths  (Node x list) = (x:) <$> concat [tree2paths l|l<-list]  
+
+-- forest2paths ::(Eq a) =>  [Tree a] -> [[[a]]]
+-- forest2paths fr =  map tree2paths fr
+
+rel2I0 ::[(Arg String ,Arg String)]-> IO()
+rel2I0 tr = 
+  let
+    -- aaa ::  (Eq a, Show a)=> Tree a -> String
+    -- aaa tt = case tt of 
+    --   Node a [] -> show a 
+    --   Node a list -> intercalate "\n" (nub $map  (\x -> x ++"->"++ show a) (nub $map aaa list))
+    aaa x =  (fst x) ++"->"++ (snd x)
+    arrows ::  String
+    arrows = intercalate "\n" $ map aaa tr
+  in
+   do writeFile "model.dot" ("digraph  model{\n" ++ arrows ++ " \n}")  
+
+path2rel ::  [String] -> [(String, String)] -> [(String, String)]
+path2rel arlist out =
+  case (length arlist ) of 
+    0 -> undefined
+    1 -> nub$ out
+    _ -> 
+      let
+        aa = last arlist
+        bb = last $init  arlist
+      in
+        path2rel (init arlist) ((bb,aa): out)
+
+
 graphviz :: (Show a) =>  IO a -> IO ProcessHandle
 graphviz x =    do x 
-                   runCommand $  "dot -Tpdf model.dot -o model.pdf;"
+                   runCommand $  "dot -Tpdf model.dot -o model.pdf"
+                              ++ " && "
                               ++ " open  model.pdf"
 
 bb = wbaf2forest_allpath input_mWBAF
 
-showGraph_PDF  = graphviz.(drawForestIO.wbaf2forest_allpath) 
-showGraph_CUI  = (drawForest.wbaf2forest_allpath)
 
-test_graph_forest1    =  showGraph_PDF input_WBAF
-test_graph_forest_all = showGraph_PDF input_WBAF
+-- show_graph_PDFa  = graphviz.(drawForestIO.wbaf2forest_allpath) 
+show_graph_PDF  x = graphviz $ rel2I0$nub$concat  $ map  (\x->path2rel  x []) $ concat $ forest2paths  $ wbaf2forest_allpath  x
+show_graph_CUI  = (drawForest.wbaf2forest_allpath)
+
+test_graph_forest1    =  show_graph_PDF input_WBAF
+test_graph_forest_all = show_graph_PDF input_WBAF
 -- graphviz $ drawForestIO $ wbaf2forest_allpath
 
 

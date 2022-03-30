@@ -10,7 +10,7 @@ Write the information about the WBAF graph you want to create in the input_WBAF.
 ## How to use
 Type `ghci Arg.hs` and run the desired file in an interactive environment. Here are some of the functions you can use.
 
-- `showGraph_PDF input_WBAF` - Outputs a graph in the form of a dot file and a diagram of it as a pdf file.
+- `show_graph_PDF input_WBAF` - Outputs a graph in the form of a dot file and a diagram of it as a pdf file.
 
 - `makeMetaWBAF input_WBAF` - Constructs a metaWBAF from the target WBAF file.
 
